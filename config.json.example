@@ -9,6 +9,16 @@
     "ask" : {"percent" : 0.5, "max" : 20},
     "telegram" : {
         "token" : "333",
-        "chatid" : 1
+        "chatid" : 1,
+        "send_messages" : {
+            "empty_balance" : true,
+            "balance" : true,
+            "top_prices" : true,
+            "desired_prices" : true,
+            "open_orders" : true,
+            "create_order" : true,
+            "changed_desired" : true,
+            "filled" : true
+        }
     }
 }
