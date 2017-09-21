@@ -25,6 +25,8 @@ const CHATID = CONFIG.telegram.chatid;
 const BID = CONFIG.bid;
 const ASK = CONFIG.ask;
 
+const MIN_ORDER = 1;
+
 let OID = 1;
 
 class Order {
@@ -90,7 +92,7 @@ async function calculateDesiredPrices() {
 
 async function makeBid(price, balance, expires) {
 
-    if(balance < 0.001) {
+    if(balance < MIN_ORDER) {
         sendMessage("not enough balance " + BASE);
         return;
     }
@@ -114,7 +116,7 @@ function ass(a, n) {
 
 async function makeAsk(price, balance, expires) {
     
-        if(balance < 0.001) {
+        if(balance < MIN_ORDER) {
             sendMessage("not enough balance " + QUOTE);
             return;
         }
