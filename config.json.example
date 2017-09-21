@@ -1,0 +1,14 @@
+{
+    "ws" : "wss://ws.golos.io",
+    "chain_id" : "782a3039b478c839e4cb0c941ff4eaeb7df40bdd68bd441afd444b9da763de12",
+    "userid" : "torgobot",
+    "key" : "5K",
+    "base" : "GBG",
+    "quote" : "GOLOS",
+    "bid" : {"percent" : 0.5, "max" : 20},
+    "ask" : {"percent" : 0.5, "max" : 20},
+    "telegram" : {
+        "token" : "333",
+        "chatid" : 1
+    }
+}

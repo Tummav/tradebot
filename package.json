@@ -1,0 +1,21 @@
+{
+  "name": "torgobot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/gropox/torgobot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/gropox/torgobot#readme",
+  "dependencies": {
+    "golos-addons": "^1.0.3",
+    "golos-js": "^0.5.21",
+    "telebot": "^1.2.3"
+  }
+}
