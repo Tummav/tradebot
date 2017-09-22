@@ -85,8 +85,9 @@ async function makeBid(price, balance, expires) {
 
     if(balance < MIN_ORDER) {
         if(MESS.empty_balance) {
-            await sendMessage("not enough balance " + BASE);
-        }
+            await sendMessage(`*Not enough balance* ${BASE}
+`);
+                    }
         return;
     }
 
@@ -97,12 +98,13 @@ async function makeBid(price, balance, expires) {
         await sendMessage(`*Create bid-order:*
 \`\`\`
 ${listOrders([{
-            sell_price : {
+    order_price : {
                 base : ass(amount_to_sell, BASE),
                 quote : ass(min_to_receive, QUOTE)
             },
             real_price : price
-        }])}\`\`\``);
+        }])}\`\`\`
+`);
     }
 
     if(global.broadcast) {
@@ -121,7 +123,8 @@ async function makeAsk(price, balance, expires) {
     
     if(balance < MIN_ORDER) {
         if(MESS.empty_balance) {
-            await sendMessage("not enough balance " + QUOTE);
+            await sendMessage(`*Not enough balance* ${QUOTE}
+`);
         }
         return;
     }
@@ -133,7 +136,7 @@ async function makeAsk(price, balance, expires) {
         await sendMessage(`*Create ask-order:*
 \`\`\`
 ${listOrders([{
-                    sell_price : {
+    order_price : {
                         base : ass(amount_to_sell, QUOTE),
                         quote : ass(min_to_receive, BASE)
                     },
@@ -197,37 +200,44 @@ ${ass(b_quote, QUOTE)} (${ass(b_o_quote, QUOTE)})
 *Sum:* ${ass(b_sum_base, BASE)}`);
 }
 
-function listOrders(orders) {
+function listOrders(orders, my_price) {
     let ret = "";
     let comma = "";
     for(let o of orders) {
-        ret += comma + `${parseFloat(o.real_price).toFixed(6)} | ${o.sell_price.base} | ${o.sell_price.quote}`;
+        const price = parseFloat(parseFloat(o.real_price).toFixed(6));
+        let bold = (my_price && my_price == price);
+        let b = bold?"☘ ":"";
+        ret += comma + `${b}${parseFloat(o.real_price).toFixed(6)} | ${o.order_price.base} | ${o.order_price.quote}`;
         comma = "\n";
     }
     return ret;
 }
 
 async function sendOrders(orders) {
-    let bids = [];
-    let asks = [];
+
+    let my_bid = 0;
+    let my_ask = 0;
+
     for(let order of orders) {
-        const base_amount = parseFloat(order.sell_price.base.split(" ")[0]);
         const base_name = order.sell_price.base.split(" ")[1];
+        const price = parseFloat(parseFloat(order.real_price).toFixed(6));
         if(base_name == BASE) {
-            bids.push(order);
+            my_bid = price;
         }
         if(base_name == QUOTE) {
-            asks.push(order);
+            my_ask = price;
         }
     }
 
+    let order_book = await golosjs.api.getOrderBook(6);
+    log.trace(order_book);
     await sendMessage(`*Bids:*
 \`\`\`
-${listOrders(bids)}
+${listOrders(order_book.bids, my_bid)}
 \`\`\``);
     await sendMessage(`*Asks:*
 \`\`\`
-${listOrders(asks)}
+${listOrders(order_book.asks, my_ask)}
 \`\`\``);
 
 }
@@ -338,7 +348,7 @@ async function updateOrders() {
         }
     }
     if(verbose) {
-        await commitMessage("☰");
+        await commitMessage("☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰");
     }
 }
 
@@ -359,9 +369,9 @@ async function processBlock(bn) {
                     if(opBody.open_owner == USERID) {
                         const base = opBody.open_pays.split(" ")[1];
                         if(BASE == base) {
-                            await sendMessage("bought " + opBody.current_pays + " for " +  opBody.open_pays);
+                            await sendMessage("← *Bought* " + opBody.current_pays + " for " +  opBody.open_pays + "\n");
                         } else {
-                            await sendMessage("sold " + opBody.current_pays + " for " +  opBody.open_pays);
+                            await sendMessage("→ *Sold* " + opBody.current_pays + " for " +  opBody.open_pays + "\n");
                         }
                     }
                 }
