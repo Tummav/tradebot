@@ -28,6 +28,9 @@ const ASK = CONFIG.ask;
 
 const MIN_ORDER = 1;
 
+let WORKING = true;
+let PREV_PRICES = null;
+
 let OID = 1;
 
 class Order {
@@ -49,7 +52,8 @@ async function getOpenOrders() {
 
 async function closeExistingOrders() {
     const orders = await getOpenOrders();
-    log.info("cancel existing orders ", orders);
+    sendMessage("*Cancel existing orders*");
+    sendOrders(orders);
     if(global.broadcast) {
         for(let o of orders) {
             //log.info("k = " + KEY);
@@ -58,6 +62,7 @@ async function closeExistingOrders() {
     } else {
         log.info("no broadcasting, orders are not canceled!");
     }
+    await commitMessage("");
 }
 
 
@@ -152,8 +157,6 @@ ${listOrders([{
     }
 }   
     
-let prev_prices = null;
-
 async function getInfos() {
 
     const balance = await getBalance();
@@ -247,99 +250,115 @@ ${listOrders(order_book.asks, my_ask)}
  */
 async function updateOrders() {
 
-    let infos = await getInfos();
-    const prices = infos.prices;
-    const balance = infos.balance;
+    log.debug("run updateOrders " + WORKING);
 
-    if(prev_prices && prev_prices.bid == infos.top_prices.bid && prev_prices.ask == infos.top_prices.ask) {
-        //nothing changed
-        return;
-    }
-    prev_prices = infos.top_prices;
-
-    if(MESS.top_prices) {
-        await sendMessage(`*Max. bid:* ${infos.top_prices.bid.toFixed(6)} *Min. ask:* ${infos.top_prices.ask.toFixed(6)}
-`);
-    }
-
-    if(MESS.desired_prices) {
-        await sendMessage(`*Des. bid:* ${infos.prices.bid.toFixed(6)} *Des. ask:* ${infos.prices.ask.toFixed(6)}
-`);
-    }
-
-    let orders = await getOpenOrders();
-
-    //log.info("desired prices", JSON.stringify(prices));
-
-    let createBid = true;
-    let createAsk = true;
+    if(WORKING) {
     
 
-    //iterate through orders, expected max 2
-    for(let order of orders) {
-        const base = order.sell_price.base.split(" ")[1];
-        const price = parseFloat(order.real_price);
+        let infos = await getInfos();
+        const prices = infos.prices;
+        const balance = infos.balance;
 
-        if(base == BASE) {
-            log.debug("found bid for price " + price + " vs " + prices.bid);
-            //bid. Check if bid < desired bid price
-            if(price + 0.001 < prices.bid) {
-                //cancel order and create new one
-                if(MESS.changed_desired) {
-                    await sendMessage("bid is less then desired, increase " + price.toFixed(6) + " / " + prices.bid.toFixed(6));
-                }
-                if(global.broadcast) {
-                    await golosjs.broadcast.limitOrderCancelAsync(KEY, USERID, parseInt(order.orderid));
+        if(PREV_PRICES && PREV_PRICES.bid == infos.top_prices.bid && PREV_PRICES.ask == infos.top_prices.ask) {
+            //nothing changed
+            return;
+        }
+        PREV_PRICES = infos.top_prices;
+
+        if(MESS.top_prices) {
+            await sendMessage(`*Max. bid:* ${infos.top_prices.bid.toFixed(6)} *Min. ask:* ${infos.top_prices.ask.toFixed(6)}
+    `);
+        }
+
+        if(MESS.desired_prices) {
+            await sendMessage(`*Des. bid:* ${infos.prices.bid.toFixed(6)} *Des. ask:* ${infos.prices.ask.toFixed(6)}
+    `);
+        }
+
+        let orders = await getOpenOrders();
+
+        //log.info("desired prices", JSON.stringify(prices));
+
+        let createBid = true;
+        let createAsk = true;
+        
+
+        //iterate through orders, expected max 2
+        for(let order of orders) {
+            const base = order.sell_price.base.split(" ")[1];
+            const price = parseFloat(order.real_price);
+
+            if(base == BASE) {
+                log.debug("found bid for price " + price + " vs " + prices.bid);
+                //bid. Check if bid < desired bid price
+                if(price + 0.001 < prices.bid) {
+                    //cancel order and create new one
+                    if(MESS.changed_desired) {
+                        await sendMessage("bid is less then desired, increase " + price.toFixed(6) + " / " + prices.bid.toFixed(6));
+                    }
+                    if(global.broadcast) {
+                        await golosjs.broadcast.limitOrderCancelAsync(KEY, USERID, parseInt(order.orderid));
+                    } else {
+                        log.info("no broadcasting, bid not canceled");
+                    }
                 } else {
-                    log.info("no broadcasting, bid not canceled");
+                    createBid = false;
                 }
-            } else {
-                createBid = false;
+            }
+            if(base == QUOTE) {
+                log.debug("found ask for price " + price + " vs " + prices.ask);
+                //bid. Check if bid < desired bid price
+                if(price - 0.001 > prices.ask) {
+                    //cancel order and create new one
+                    if(MESS.changed_desired) {
+                        await sendMessage("ask is greather then desired, decrease " + price + "/" + prices.ask.toFixed(6));
+                    }
+                    if(global.broadcast) {
+                        await golosjs.broadcast.limitOrderCancelAsync(KEY, USERID, parseInt(order.orderid));
+                    } else {
+                        log.info("no broadcasting, ask not canceled");
+                    }
+                } else {
+                    createAsk = false;
+                }
             }
         }
-        if(base == QUOTE) {
-            log.debug("found ask for price " + price + " vs " + prices.ask);
-            //bid. Check if bid < desired bid price
-            if(price - 0.001 > prices.ask) {
-                //cancel order and create new one
-                if(MESS.changed_desired) {
-                    await sendMessage("ask is greather then desired, decrease " + price + "/" + prices.ask.toFixed(6));
+
+        if(createBid || createAsk) {
+            let props = await golos.getCurrentServerTimeAndBlock();
+            const expires = props.time - 1000 * 60 * 60;
+            let verbose = false;
+            for(let f of Object.keys(MESS)) {
+                if(MESS[f]) {
+                    verbose = true;
+                    break;
                 }
-                if(global.broadcast) {
-                    await golosjs.broadcast.limitOrderCancelAsync(KEY, USERID, parseInt(order.orderid));
-                } else {
-                    log.info("no broadcasting, ask not canceled");
-                }
-            } else {
-                createAsk = false;
+            }
+            if(verbose) {
+                await commitMessage("☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰");
+            }
+        
+            if(createBid) {
+                await makeBid(prices.bid, balance[BASE], expires);
+            }
+        
+            if(createAsk) {
+                await makeAsk(prices.ask, balance[QUOTE], expires);
             }
         }
-    }
 
-    if(createBid || createAsk) {
-        let props = await golos.getCurrentServerTimeAndBlock();
-        const expires = props.time - 1000 * 60 * 60;
+        infos = await getInfos();
+        orders = await getOpenOrders();
 
-        if(createBid) {
-            await makeBid(prices.bid, balance[BASE], expires);
+        if(MESS.open_orders) {
+            await sendOrders(orders);
         }
-    
-        if(createAsk) {
-            await makeAsk(prices.ask, balance[QUOTE], expires);
+
+        if(MESS.balance) {
+            await sendBalance(infos, orders);
         }
     }
 
-    infos = await getInfos();
-    orders = await getOpenOrders();
-
-    if(MESS.open_orders) {
-        await sendOrders(orders);
-    }
-
-    if(MESS.balance) {
-        await sendBalance(infos, orders);
-    }
-    
     let verbose = false;
     for(let f of Object.keys(MESS)) {
         if(MESS[f]) {
@@ -442,6 +461,28 @@ async function onText(data) {
 
 }
 
+async function onCancel(data) {
+    const chatid = data.from.id;
+    log.info("received cancel from chat id " + chatid);
+    await closeExistingOrders();
+}
+
+async function onPause(data) {
+    const chatid = data.from.id;
+    log.info("received pause from chat id " + chatid);
+    await closeExistingOrders();
+    WORKING = false;    
+}
+
+async function onRun(data) {
+    const chatid = data.from.id;
+    log.info("received run from chat id " + chatid);
+    WORKING = true;
+    PREV_PRICES = null;  
+    await updateOrders();
+}
+
+
 if(BOT_TOKEN) {
     const TeleBot = require("telebot");
 
@@ -457,6 +498,11 @@ if(BOT_TOKEN) {
     });
 
     bot.on('text', onText);
+    bot.on('/cancel', onCancel);
+    bot.on('/pause', onPause);
+    bot.on('/run', onRun);
+    
+    bot.connect();
 }
 
 run();
