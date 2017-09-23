@@ -259,7 +259,7 @@ async function updateOrders() {
         const prices = infos.prices;
         const balance = infos.balance;
 
-        if(PREV_PRICES && PREV_PRICES.bid == infos.top_prices.bid && PREV_PRICES.ask == infos.top_prices.ask) {
+        if(PREV_PRICES && Math.abs(PREV_PRICES.bid - infos.top_prices.bid) > 0.01 && Math.abs(PREV_PRICES.ask - infos.top_prices.ask) > 0.01) {
             //nothing changed
             return;
         }
@@ -327,16 +327,6 @@ async function updateOrders() {
         if(createBid || createAsk) {
             let props = await golos.getCurrentServerTimeAndBlock();
             const expires = props.time - 1000 * 60 * 60;
-            let verbose = false;
-            for(let f of Object.keys(MESS)) {
-                if(MESS[f]) {
-                    verbose = true;
-                    break;
-                }
-            }
-            if(verbose) {
-                await commitMessage("☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰");
-            }
         
             if(createBid) {
                 await makeBid(prices.bid, balance[BASE], expires);
@@ -392,6 +382,7 @@ async function processBlock(bn) {
                         } else {
                             await sendMessage("→ *Sold* " + opBody.current_pays + " for " +  opBody.open_pays + "\n");
                         }
+                        commitMessage();
                     }
                 }
                 break;
