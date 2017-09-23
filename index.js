@@ -232,7 +232,7 @@ async function sendOrders(orders) {
         }
     }
 
-    let order_book = await golosjs.api.getOrderBook(6);
+    let order_book = await golosjs.api.getOrderBook(12);
     log.trace(order_book);
     await sendMessage(`*Bids:*
 \`\`\`
