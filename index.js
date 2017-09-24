@@ -62,7 +62,6 @@ async function closeExistingOrders() {
     } else {
         log.info("no broadcasting, orders are not canceled!");
     }
-    await commitMessage("");
 }
 
 
@@ -438,6 +437,9 @@ async function sendMessage(msg) {
 
 
 async function commitMessage(msg) {
+    if(message == "") {
+        return;
+    }
     await sendMessage(msg);
     if(!BOT_TOKEN) {
         return;
