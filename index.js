@@ -479,6 +479,15 @@ async function onRun(data) {
     await updateOrders();
 }
 
+async function onStatus(data) {
+    const chatid = data.from.id;
+    log.info("received status from chat id " + chatid);
+    infos = await getInfos();
+    orders = await getOpenOrders();
+    await sendOrders(orders);
+    await sendBalance(infos, orders);
+    await commitMessage("-------------------")
+}
 
 if(BOT_TOKEN) {
     const TeleBot = require("telebot");
@@ -498,6 +507,7 @@ if(BOT_TOKEN) {
     bot.on('/cancel', onCancel);
     bot.on('/pause', onPause);
     bot.on('/run', onRun);
+    bot.on('/status', onStatus);
     
     bot.connect();
 }
