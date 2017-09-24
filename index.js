@@ -326,6 +326,10 @@ async function updateOrders(filled) {
                 }
             }
         }
+
+        log.debug("filled", filled);
+        log.debug("createBid", createBid);
+        log.debug("createAsk", createAsk);
         if(createBid || createAsk) {
             let props = await golos.getCurrentServerTimeAndBlock();
             const expires = props.time - 1000 * 60 * 60;
@@ -338,6 +342,9 @@ async function updateOrders(filled) {
                 createAsk = await makeAsk(prices.ask, balance[QUOTE], expires);
             }
         }
+        log.debug("filled", filled);
+        log.debug("createBid", createBid);
+        log.debug("createAsk", createAsk);
         const mess = filled || createAsk || createBid;
         
         infos = await getInfos();
@@ -380,9 +387,9 @@ async function processBlock(bn) {
         }
         switch(op) {
             case "fill_order":
-                filled = true;
                 if(MESS.filled) {
                     if(opBody.open_owner == USERID) {
+                        filled = true;
                         const base = opBody.open_pays.split(" ")[1];
                         if(BASE == base) {
                             await sendMessage("← *Bought* " + opBody.current_pays + " for " +  opBody.open_pays + "\n");
