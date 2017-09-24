@@ -92,7 +92,7 @@ async function makeBid(price, balance, expires) {
             await sendMessage(`*Not enough balance* ${BASE}
 `);
                     }
-        return;
+        return false;
     }
 
     const amount_to_sell = Math.min(balance, BID.max);
@@ -114,9 +114,11 @@ ${listOrders([{
     if(global.broadcast) {
         await golosjs.broadcast.limitOrderCreateAsync(KEY, USERID, OID++ 
             , ass(amount_to_sell, BASE), ass(min_to_receive, QUOTE), false, new Date(Date.now() + 60 * 60 * 1000));
+        return true;
     } else {
         log.info("no broadcast, order is not created!");
     }
+    return false;
 }
 
 function ass(a, n) {
@@ -130,7 +132,7 @@ async function makeAsk(price, balance, expires) {
             await sendMessage(`*Not enough balance* ${QUOTE}
 `);
         }
-        return;
+        return false;
     }
 
     const amount_to_sell = Math.min(balance, BID.max);
@@ -151,9 +153,11 @@ ${listOrders([{
     if(global.broadcast) {
         await golosjs.broadcast.limitOrderCreateAsync(KEY, USERID, OID++
             , ass(amount_to_sell, QUOTE), ass(min_to_receive, BASE), false, new Date(Date.now() + 60 * 60 * 1000));
+        return true;
     } else {
         log.info("no broadcast, order is not created!");
     }
+    return false;
 }   
     
 async function getInfos() {
@@ -322,20 +326,20 @@ async function updateOrders(filled) {
                 }
             }
         }
-        const mess = filled || createAsk || createBid;
         if(createBid || createAsk) {
             let props = await golos.getCurrentServerTimeAndBlock();
             const expires = props.time - 1000 * 60 * 60;
         
             if(createBid) {
-                await makeBid(prices.bid, balance[BASE], expires);
+                createBid = await makeBid(prices.bid, balance[BASE], expires);
             }
         
             if(createAsk) {
-                await makeAsk(prices.ask, balance[QUOTE], expires);
+                createAsk = await makeAsk(prices.ask, balance[QUOTE], expires);
             }
         }
-
+        const mess = filled || createAsk || createBid;
+        
         infos = await getInfos();
         orders = await getOpenOrders();
 
