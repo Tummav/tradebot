@@ -385,7 +385,7 @@ async function processBlock(bn) {
                         } else {
                             await sendMessage("→ *Sold* " + opBody.current_pays + " for " +  opBody.open_pays + "\n");
                         }
-                        commitMessage("");
+                        await commitMessage("");
                     }
                 }
                 break;
