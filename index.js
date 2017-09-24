@@ -232,7 +232,7 @@ async function sendOrders(orders) {
         }
     }
 
-    let order_book = await golosjs.api.getOrderBook(12);
+    let order_book = await golosjs.api.getOrderBook(8);
     log.trace(order_book);
     await sendMessage(`*Bids:*
 \`\`\`
@@ -248,7 +248,7 @@ ${listOrders(order_book.asks, my_ask)}
 /**
  * The brain!
  */
-async function updateOrders() {
+async function updateOrders(filled) {
 
     log.debug("run updateOrders " + WORKING);
 
@@ -323,7 +323,7 @@ async function updateOrders() {
                 }
             }
         }
-
+        const mess = filled || createAsk || createBid;
         if(createBid || createAsk) {
             let props = await golos.getCurrentServerTimeAndBlock();
             const expires = props.time - 1000 * 60 * 60;
@@ -340,12 +340,14 @@ async function updateOrders() {
         infos = await getInfos();
         orders = await getOpenOrders();
 
-        if(MESS.open_orders) {
-            await sendOrders(orders);
-        }
+        if(mess) {
+            if(MESS.open_orders) {
+                await sendOrders(orders);
+            }
 
-        if(MESS.balance) {
-            await sendBalance(infos, orders);
+            if(MESS.balance) {
+                await sendBalance(infos, orders);
+            }
         }
     }
 
@@ -366,6 +368,7 @@ async function processBlock(bn) {
     let transactions = await golosjs.api.getOpsInBlockAsync(bn, false);
     //log.debug(JSON.stringify(transactions));
     let found_order_changes = false;
+    let filled = false;
     for(let tr of transactions) {
         let op = tr.op[0];
         let opBody = tr.op[1];
@@ -374,6 +377,7 @@ async function processBlock(bn) {
         }
         switch(op) {
             case "fill_order":
+                filled = true;
                 if(MESS.filled) {
                     if(opBody.open_owner == USERID) {
                         const base = opBody.open_pays.split(" ")[1];
@@ -389,7 +393,7 @@ async function processBlock(bn) {
         }
     }             
     if(found_order_changes)  {
-        await updateOrders();
+        await updateOrders(filled);
     }
 }
 
