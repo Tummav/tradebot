@@ -207,13 +207,24 @@ ${ass(b_quote, QUOTE)} (${ass(b_o_quote, QUOTE)})
 }
 
 function listOrders(orders, my_price) {
+    const MAX_ROWS = 6;
     let ret = "";
     let comma = "";
+    let row = 0;
+    let dummy_row = false;
     for(let o of orders) {
         const price = parseFloat(parseFloat(o.real_price).toFixed(6));
         let bold = (my_price && my_price == price);
         let b = bold?"☘ ":"";
-        ret += comma + `${b}${parseFloat(o.real_price).toFixed(6)} | ${o.order_price.base} | ${o.order_price.quote}`;
+        if(row < MAX_ROWS || bold) {
+            ret += comma + `${b}${parseFloat(o.real_price).toFixed(6)} | ${o.order_price.base} | ${o.order_price.quote}`;
+        } else {
+            if(!dummy_row) {
+                dummy_row = true;
+                ret += comma + "...";
+            }
+        }
+        row ++;
         comma = "\n";
     }
     return ret;
@@ -235,7 +246,7 @@ async function sendOrders(orders) {
         }
     }
 
-    let order_book = await golosjs.api.getOrderBook(8);
+    let order_book = await golosjs.api.getOrderBook(20);
     log.trace(order_book);
     await sendMessage(`*Bids:*
 \`\`\`
