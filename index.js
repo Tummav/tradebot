@@ -401,11 +401,16 @@ async function processBlock(bn) {
                 if(MESS.filled) {
                     if(opBody.open_owner == USERID) {
                         filled = true;
+                        
                         const base = opBody.open_pays.split(" ")[1];
+                        const cp = parseFloat(opBody.current_pays.split(" ")[0]);
+                        const op = parseFloat(opBody.open_pays.split(" ")[0]);
                         if(BASE == base) {
-                            await sendMessage("← *Bought* " + opBody.current_pays + " for " +  opBody.open_pays + "\n");
+                            const price =  (op / cp).toFixed(6);
+                            await sendMessage("← *Bought* " + opBody.current_pays + " for " +  opBody.open_pays + "(" + price + ")\n");
                         } else {
-                            await sendMessage("→ *Sold* " + opBody.current_pays + " for " +  opBody.open_pays + "\n");
+                            const price =  (cp / op).toFixed(6);
+                            await sendMessage("→ *Sold* " + opBody.open_pays + " for " +  opBody.current_pays + "(" + price + ")\n");
                         }
                         await commitMessage("");
                     }
