@@ -516,7 +516,7 @@ async function onStatus(data) {
     await commitMessage("-------------------")
 }
 
-if(BOT_TOKEN) {
+if(BOT_TOKEN && BOT_TOKEN != "") {
     const TeleBot = require("telebot");
 
     bot = new TeleBot({
