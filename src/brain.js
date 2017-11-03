@@ -1,6 +1,6 @@
 const log = require("golos-addons").global.getLogger("brain");
 
-const WaveFarm = require("./wave_farm");
+const WaveFarm = require("./wave-farm");
 
 module.exports.brainFactory = (strategy) => {
     switch(strategy.name) {
